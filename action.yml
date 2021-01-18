@@ -1,0 +1,22 @@
+name: 'Modify and reload vector config'
+description: 'Modifies and reloads vector config in order to include appropriate fields for a particular CI run'
+inputs:
+  test-type:
+    description: 'What type of test is being run?'
+    required: true
+runs:
+  using: "composite"
+  steps: 
+    - name: Rewrite vector configuration
+      shell: bash
+      run: |
+        sed \
+        -e 's/\$\$CI_JOB\$\$/${{github.job}}/' \
+        -e 's/\$\$CI_RUN_ID\$\$/${{github.run_id}}/' \
+        -e 's/\$\$CI_RUN_NUMBER\$\$/${{github.run_number}}/' \
+        -e 's/\$\$CI_SHA\$\$/${{github.sha}}/' -e 's|\$\$CI_REF\$\$|${{github.ref}}|' \
+        -e 's/\$\$CI_AUTHOR\$\$/${{github.actor}}/' -e 's/\$\$CI_TEST_TYPE\$\$/${{inputs.test-type}}/' \
+        /etc/vector/vector.toml.tmpl > /etc/vector/vector.toml
+    - name: Reload vector
+      shell: bash
+      run: sudo systemctl reload vector
